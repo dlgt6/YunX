@@ -1,8 +1,8 @@
 # Nightly 测试包构建：每天北京时间 0 点（UTC 16:00）定时跑一次，另支持手动触发。
 # 按作者要求（PR #113）：不打 tag、不发 GitHub Release，产物仅上传为 Actions Artifacts，
 # 供每日最新 master 的尝鲜测试，不污染正式版本号与更新检测。
-# 签名：Release 包用仓库 Secrets 里的正式证书签名（KEYSTORE_BASE64 / KEYSTORE_PASSWORD /
-# KEY_ALIAS / KEY_PASSWORD），与正式版同签名 ⇒ 测试包可直接覆盖安装升级；
+# 签名：Release 包用仓库 Secrets 里的正式证书签名（ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD /
+# ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD），与正式版同签名 ⇒ 测试包可直接覆盖安装升级；
 # 本地构建没有这些变量，app/build.gradle.kts 会把 release 变体置为未签名（app-release-unsigned.apk）。
 name: Nightly Build APK
 
@@ -73,17 +73,17 @@ jobs:
             echo "SKIP_BUILD=1" >> "$GITHUB_ENV"
           fi
 
-      # 从 Secrets 还原正式签名证书：KEYSTORE_BASE64 解码到 runner 临时目录
+      # 从 Secrets 还原正式签名证书：ANDROID_KEYSTORE_BASE64 解码到 runner 临时目录
       # （不落仓库、不进 Artifacts，runner 销毁即消失）。四项 Secrets 缺一即报错退出，
       # 避免 nightly 悄悄产出未签名包（本地构建不经过这里 ⇒ release 仍是未签名包）。
       # 用 printf 而不是 echo 解码，防止个别 shell 对长字符串加换行/截断。
       - name: Restore release keystore
         if: env.SKIP_BUILD != '1'
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -e
           for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
@@ -107,9 +107,9 @@ jobs:
         # 签名口令/别名只注入到这一步；证书路径 YUNX_KEYSTORE_FILE 已由上一步写进 GITHUB_ENV。
         env:
           YUNX_USE_MIRROR: 'false'
-          YUNX_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          YUNX_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          YUNX_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          YUNX_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          YUNX_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          YUNX_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           ./gradlew assembleRelease --no-daemon
 
