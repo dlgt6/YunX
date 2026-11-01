@@ -44,13 +44,16 @@ val envSigningReady: Boolean = releaseKeystorePath != null &&
 
 // 本地回退：app/key.properties（与 app/build.gradle.kts 同目录解析）
 val keyPropsFile = file("key.properties")
-val keyProps: java.util.Properties? = if (!envSigningReady && keyPropsFile.isFile) {
-    java.util.Properties().apply { keyPropsFile.inputStream().use { load(it) } }.takeIf { props ->
-        val storeFilePath = props.getProperty("storeFile")?.takeIf { it.isNotBlank() }
+val keyProps: Map<String, String>? = if (!envSigningReady && keyPropsFile.isFile) {
+    keyPropsFile.readLines().mapNotNull { line ->
+        val idx = line.indexOf('=')
+        if (idx > 0) line.substring(0, idx).trim() to line.substring(idx + 1).trim() else null
+    }.toMap().takeIf { map ->
+        val storeFilePath = map["storeFile"]?.takeIf { it.isNotBlank() }
         storeFilePath != null && file(storeFilePath).isFile &&
-            !props.getProperty("storePassword").isNullOrBlank() &&
-            !props.getProperty("keyAlias").isNullOrBlank() &&
-            !props.getProperty("keyPassword").isNullOrBlank()
+            !map["storePassword"].isNullOrBlank() &&
+            !map["keyAlias"].isNullOrBlank() &&
+            !map["keyPassword"].isNullOrBlank()
     }
 } else null
 val propsSigningReady: Boolean = keyProps != null
@@ -92,10 +95,10 @@ android {
                     keyPassword = System.getenv("YUNX_KEY_PASSWORD")
                 } else {
                     val props = keyProps!!
-                    storeFile = file(props.getProperty("storeFile"))
-                    storePassword = props.getProperty("storePassword")
-                    keyAlias = props.getProperty("keyAlias")
-                    keyPassword = props.getProperty("keyPassword")
+                    storeFile = file(props["storeFile"]!!)
+                    storePassword = props["storePassword"]!!
+                    keyAlias = props["keyAlias"]!!
+                    keyPassword = props["keyPassword"]!!
                 }
             }
         }
