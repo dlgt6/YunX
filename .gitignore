@@ -21,7 +21,9 @@ local.properties
 
 # 签名证书与口令：正式证书不要进仓库（CI 用 GitHub Secrets，见 .github/workflows/build-apk.yml）
 *.jks
+*.keystore
 keystore.properties
+key.properties
 
 # 发版说明：只在本地维护，不进仓库（要发布时把内容粘到 GitHub Release 正文即可）
 Releases.md
